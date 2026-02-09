@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+    mongodb: 
+        image: mongo
+        container_name: mongodb-adm
+        restart: unless-stopped
+        ports:
+            - "21017:21017"
+
+        command: ["mongodb", "--replset", "rs0", "--bind_ip_all"]
+        volumes:
+            - mongo_data:/data/db 
+
+volumes:
+    mongo_data:
