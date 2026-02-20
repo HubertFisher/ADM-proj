@@ -86,7 +86,6 @@ services:
       - ./scripts:/scripts
       - ./data:/data
 
-  # Python container для импорта данных
   python_import:
     build: .
     container_name: python_import
