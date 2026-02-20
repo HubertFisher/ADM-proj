@@ -1,6 +1,6 @@
 version: "3.8"
 services:
-  # Config server (single for demo)
+  # Config server
   configsvr:
     image: mongo:7.0
     container_name: configsvr
@@ -71,20 +71,33 @@ services:
     image: mongo:7.0
     container_name: mongos
     depends_on:
-        - configsvr
-        - shard1_1
-        - shard1_2
-        - shard1_3
-        - shard2_1
-        - shard2_2
-        - shard2_3
+      - configsvr
+      - shard1_1
+      - shard1_2
+      - shard1_3
+      - shard2_1
+      - shard2_2
+      - shard2_3
     command: >
-        mongos --configdb csrs/configsvr:27019 --bind_ip_all --port 27020
+      mongos --configdb csrs/configsvr:27019 --bind_ip_all --port 27020
     ports:
-        - "27020:27020"
+      - "27020:27020"
     volumes:
-        - ./scripts:/scripts
-        - ./data:/data
+      - ./scripts:/scripts
+      - ./data:/data
+
+  # Python container для импорта данных
+  python_import:
+    build: .
+    container_name: python_import
+    depends_on:
+      - mongos
+    environment:
+      MONGO_URI: "mongodb://mongos:27020"
+    volumes:
+      - ./scripts:/scripts
+      - ./data:/data
+    command: ["python", "/scripts/setup_import.py"]
 
 volumes:
   csdb:
