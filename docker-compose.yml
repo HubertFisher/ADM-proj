@@ -1,16 +1,96 @@
-version: '3.8'
-
+version: "3.8"
 services:
-    mongodb: 
-        image: mongo
-        container_name: mongodb-adm
-        restart: unless-stopped
-        ports:
-            - "21017:21017"
+  # Config server (single for demo)
+  configsvr:
+    image: mongo:7.0
+    container_name: configsvr
+    command: ["mongod", "--configsvr", "--replSet", "csrs", "--bind_ip_all", "--port", "27019"]
+    ports:
+      - "27019:27019"
+    volumes:
+      - csdb:/data/configdb
 
-        command: ["mongodb", "--replset", "rs0", "--bind_ip_all"]
-        volumes:
-            - mongo_data:/data/db 
+  # Shard1 members (rs1)
+  shard1_1:
+    image: mongo:7.0
+    container_name: shard1_1
+    command: ["mongod", "--shardsvr", "--replSet", "rs1", "--bind_ip_all", "--port", "27018"]
+    ports:
+      - "27018:27018"
+    volumes:
+      - shard1_1_db:/data/db
+
+  shard1_2:
+    image: mongo:7.0
+    container_name: shard1_2
+    command: ["mongod", "--shardsvr", "--replSet", "rs1", "--bind_ip_all", "--port", "27028"]
+    ports:
+      - "27028:27028"
+    volumes:
+      - shard1_2_db:/data/db
+
+  shard1_3:
+    image: mongo:7.0
+    container_name: shard1_3
+    command: ["mongod", "--shardsvr", "--replSet", "rs1", "--bind_ip_all", "--port", "27038"]
+    ports:
+      - "27038:27038"
+    volumes:
+      - shard1_3_db:/data/db
+
+  # Shard2 members (rs2)
+  shard2_1:
+    image: mongo:7.0
+    container_name: shard2_1
+    command: ["mongod", "--shardsvr", "--replSet", "rs2", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - shard2_1_db:/data/db
+
+  shard2_2:
+    image: mongo:7.0
+    container_name: shard2_2
+    command: ["mongod", "--shardsvr", "--replSet", "rs2", "--bind_ip_all", "--port", "27027"]
+    ports:
+      - "27027:27027"
+    volumes:
+      - shard2_2_db:/data/db
+
+  shard2_3:
+    image: mongo:7.0
+    container_name: shard2_3
+    command: ["mongod", "--shardsvr", "--replSet", "rs2", "--bind_ip_all", "--port", "27037"]
+    ports:
+      - "27037:27037"
+    volumes:
+      - shard2_3_db:/data/db
+
+  # Mongos router
+  mongos:
+    image: mongo:7.0
+    container_name: mongos
+    depends_on:
+        - configsvr
+        - shard1_1
+        - shard1_2
+        - shard1_3
+        - shard2_1
+        - shard2_2
+        - shard2_3
+    command: >
+        mongos --configdb csrs/configsvr:27019 --bind_ip_all --port 27020
+    ports:
+        - "27020:27020"
+    volumes:
+        - ./scripts:/scripts
+        - ./data:/data
 
 volumes:
-    mongo_data:
+  csdb:
+  shard1_1_db:
+  shard1_2_db:
+  shard1_3_db:
+  shard2_1_db:
+  shard2_2_db:
+  shard2_3_db:
