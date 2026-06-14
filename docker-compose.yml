@@ -1,142 +1,118 @@
 version: "3.8"
 
+x-mongo-common: &mongo-common
+  image: mongo:latest
+  restart: unless-stopped
+  networks:
+    - mongo-net
+
 services:
-  configsvr:
-    image: mongo:7.0
-    container_name: configsvr
-    command: ["mongod", "--configsvr", "--replSet", "csrs", "--bind_ip_all", "--port", "27019"]
-    ports:
-      - "27019:27019"
-    volumes:
-      - csdb:/data/configdb
-    healthcheck:
-      test: ["CMD", "mongosh", "--port", "27019", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
 
-  shard1_1:
-    image: mongo:7.0
-    container_name: shard1_1
-    command: ["mongod", "--shardsvr", "--replSet", "rs1", "--bind_ip_all", "--port", "27018"]
-    ports:
-      - "27018:27018"
-    volumes:
-      - shard1_1_db:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--port", "27018", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
+  # CONFIG SERVERS
+  config1:
+    <<: *mongo-common
+    container_name: config1
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["config1-data:/data/db"]
 
-  shard1_2:
-    image: mongo:7.0
-    container_name: shard1_2
-    command: ["mongod", "--shardsvr", "--replSet", "rs1", "--bind_ip_all", "--port", "27028"]
-    ports:
-      - "27028:27028"
-    volumes:
-      - shard1_2_db:/data/db
+  config2:
+    <<: *mongo-common
+    container_name: config2
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["config2-data:/data/db"]
 
-  shard1_3:
-    image: mongo:7.0
-    container_name: shard1_3
-    command: ["mongod", "--shardsvr", "--replSet", "rs1", "--bind_ip_all", "--port", "27038"]
-    ports:
-      - "27038:27038"
-    volumes:
-      - shard1_3_db:/data/db
+  config3:
+    <<: *mongo-common
+    container_name: config3
+    command: ["mongod", "--configsvr", "--replSet", "configRS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["config3-data:/data/db"]
 
-  shard2_1:
-    image: mongo:7.0
-    container_name: shard2_1
-    command: ["mongod", "--shardsvr", "--replSet", "rs2", "--bind_ip_all", "--port", "27017"]
+  # SHARD 1
+  shard1a:
+    <<: *mongo-common
+    container_name: shard1a
+    command: ["mongod", "--shardsvr", "--replSet", "shard1RS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["shard1a-data:/data/db"]
+
+  shard1b:
+    <<: *mongo-common
+    container_name: shard1b
+    command: ["mongod", "--shardsvr", "--replSet", "shard1RS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["shard1b-data:/data/db"]
+
+  shard1c:
+    <<: *mongo-common
+    container_name: shard1c
+    command: ["mongod", "--shardsvr", "--replSet", "shard1RS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["shard1c-data:/data/db"]
+
+  # SHARD 2
+  shard2a:
+    <<: *mongo-common
+    container_name: shard2a
+    command: ["mongod", "--shardsvr", "--replSet", "shard2RS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["shard2a-data:/data/db"]
+
+  shard2b:
+    <<: *mongo-common
+    container_name: shard2b
+    command: ["mongod", "--shardsvr", "--replSet", "shard2RS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["shard2b-data:/data/db"]
+
+  shard2c:
+    <<: *mongo-common
+    container_name: shard2c
+    command: ["mongod", "--shardsvr", "--replSet", "shard2RS", "--port", "27017", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes: ["shard2c-data:/data/db"]
+
+  # ROUTER 
+  mongos1:
+    <<: *mongo-common
+    container_name: mongos1
+    command: ["mongos", "--configdb", "configRS/config1:27017,config2:27017,config3:27017", "--port", "27017", "--bind_ip_all"]
     ports:
       - "27017:27017"
-    volumes:
-      - shard2_1_db:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--port", "27017", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
 
-  shard2_2:
-    image: mongo:7.0
-    container_name: shard2_2
-    command: ["mongod", "--shardsvr", "--replSet", "rs2", "--bind_ip_all", "--port", "27027"]
-    ports:
-      - "27027:27027"
-    volumes:
-      - shard2_2_db:/data/db
 
-  shard2_3:
-    image: mongo:7.0
-    container_name: shard2_3
-    command: ["mongod", "--shardsvr", "--replSet", "rs2", "--bind_ip_all", "--port", "27037"]
-    ports:
-      - "27037:27037"
-    volumes:
-      - shard2_3_db:/data/db
-
-  mongos:
-    image: mongo:7.0
-    container_name: mongos
-    depends_on:
-      configsvr:
-        condition: service_healthy
-      shard1_1:
-        condition: service_healthy
-      shard2_1:
-        condition: service_healthy
-    command: mongos --configdb csrs/configsvr:27019 --bind_ip_all --port 27020
-    ports:
-      - "27020:27020"
-    volumes:
-      - ./scripts:/scripts
-      - ./data:/data
-    healthcheck:
-      test: ["CMD", "mongosh", "--host", "mongos", "--port", "27020", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 40
-
-  cluster_init:
-    image: mongo:7.0
-    container_name: cluster_init
-    depends_on:
-      mongos:
-        condition: service_healthy
-    volumes:
-      - ./scripts:/scripts
-    command: ["mongosh", "--host", "mongos", "--port", "27020", "/scripts/init_mongo.js"]
+ # INITIALIZER
+  cluster-init:
+    image: mongo:latest
+    container_name: cluster-init
     restart: "no"
-
-  python_import:
-    build: .
-    container_name: python_import
-    depends_on:
-      cluster_init:
-        condition: service_completed_successfully
-    environment:
-      MONGO_URI: mongodb://mongos:27020
-      DB_NAME: metropt
-      COLLECTION_NAME: sensor_data
-      CSV_PATH: /data/metropt3.csv
-      BATCH_SIZE: 50000
-      DROP_COLLECTION: "false"
-      WAIT_TIMEOUT_SEC: 180
+    networks:
+      - mongo-net
     volumes:
-      - ./scripts:/scripts
-      - ./data:/data
-    command: ["python", "/scripts/setup_import.py"]
-    restart: "no"
+      - ./scripts/init-cluster.js:/scripts/init-cluster.js:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        echo "Waiting for all nodes to be available..."
+        
+        # Check availability of config servers and shard primaries
+        for node in config1 shard1a shard2a; do
+          echo "checking $$node..."
+          while ! mongosh --host "$$node" --port 27017 --eval "db.adminCommand('ping')" --quiet >/dev/null 2>&1; do
+            sleep 2
+          done
+          echo "Node $$node is available."
+        done
+        
+        set -euo pipefail
+        echo "Starting cluster initialization..."
+        mongosh --nodb /scripts/init-cluster.js
+
+networks:
+  mongo-net:
+    driver: bridge
+    name: mongo-net
 
 volumes:
-  csdb:
-  shard1_1_db:
-  shard1_2_db:
-  shard1_3_db:
-  shard2_1_db:
-  shard2_2_db:
-  shard2_3_db:
+  config1-data:
+  config2-data:
+  config3-data:
+  shard1a-data:
+  shard1b-data:
+  shard1c-data:
+  shard2a-data:
+  shard2b-data:
+  shard2c-data:
