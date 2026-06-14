@@ -41,3 +41,5 @@ Thumbs.db
 *.db
 .venv/
 venv/
+*.csv
+
