@@ -24,6 +24,7 @@ __pycache__/
 # Environment files
 .env
 .env.*
+!.env.example
 # Logs
 *.log
 # Temporary files
@@ -33,6 +34,8 @@ __pycache__/
 *.swo
 # Coverage
 coverage/
+.coverage
+htmlcov/
 # OS generated files
 .DS_Store
 Thumbs.db
@@ -42,4 +45,5 @@ Thumbs.db
 .venv/
 venv/
 *.csv
-
+data/*.zip
+work/

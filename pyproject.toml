@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "metropt-mongo"
+version = "2.1.0"
+description = "Data-validated MetroPT-3 ingestion into a replicated MongoDB sharded cluster"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "ADM Project Contributors" }]
+dependencies = [
+  "pymongo>=4.10,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.13,<2",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.9,<1",
+]
+
+[project.scripts]
+metropt-ingest = "metropt_ingest.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/metropt_ingest"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers -ra"
+testpaths = ["tests"]
+markers = ["dataset: checks against the optional official MetroPT-3 archive"]
+
+[tool.coverage.run]
+branch = true
+source = ["metropt_ingest"]
+omit = ["src/metropt_ingest/__main__.py"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["metropt_ingest"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
